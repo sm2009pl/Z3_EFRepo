@@ -12,31 +12,38 @@ namespace ConsoleApp2
     {
         static void Main(string[] args)
         {
-            string id = "ALFKI";
             using var baza = new NorthwindContext();
             baza.Database.EnsureCreated();
 
+            string idCust = "BONAP";
 
-            var client = baza.Customers.Where(x => x.CustomerId == id)
-            .SelectMany(x => x.Orders)
-            .Select(x => new
-            {
-                K1 = x.CustomerId,
-                K2 = x.OrderId,
-                K3 = x.OrderDetails.Select(x => x.ProductId).ToArray()
-            });
+            var customers = baza.Customers.Where(x => x.CustomerId == idCust).ToList();
+            var order = baza.Orders.Where(x => x.CustomerId == idCust).ToList();
+            var ordersDetails = baza.OrderDetails.ToList();
+            var products = baza.Products.ToList();
 
-            Console.WriteLine("Id klienta i nr zamowienia");
-            Console.WriteLine("Id produktow");
-            foreach (var item in client)
-            {
-                Console.WriteLine("{0},    {1}", item.K1 ,item.K2);
-                foreach (var item2 in item.K3)
+
+            var finalQuery =
+                from c in customers
+                join o in order on c.CustomerId equals o.CustomerId into tab1
+                from t1 in tab1.ToList()
+                join oD in ordersDetails on t1.OrderId equals oD.OrderId into tab2
+                from t2 in tab2.ToList()
+                join p in products on t2.ProductId equals p.ProductId into tabFinal
+                from x in tabFinal.ToList()
+                select new
                 {
-                    Console.WriteLine("{0}", item2);
-                }
-
+                    ClientId = c.CustomerId,
+                    OrdId = t1.OrderId,
+                    ProdId = x.ProductId,
+                    ProdName = x.ProductName
+                };
+            foreach (var item in finalQuery)
+            {
+                Console.WriteLine("{0},  {1},  {2},  {3}", item.ClientId, item.OrdId, item.ProdId, item.ProdName);
             }
+            Console.WriteLine("xxx");
+
         }
     }
 }
